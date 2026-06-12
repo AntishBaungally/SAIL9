@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIL-9 Assessment Tool | KB 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0B1628;--navy2:#112240;--navy3:#1a3356;
+  --gold:#C49A3C;--gold2:#E8BE6A;--gold-dim:rgba(196,154,60,0.12);
+  --paper:#F2EFE8;--paper2:#E8E4DC;
+  --ink:#0e1a2b;--ink2:#2c3e52;--ink3:#5a7494;
+  --white:#fff;--red:#C94040;--red-bg:rgba(201,64,64,0.08);
+  --green:#2E8B6A;--green-bg:rgba(46,139,106,0.1);
+  --blue:#2E6BA8;--amber:#B87020;
+  --line:rgba(255,255,255,0.08);--line-light:rgba(11,22,40,0.1);
+  --r:8px;--r-lg:14px;
+  --sidebar:260px;--score-w:320px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--paper);color:var(--ink);overflow-x:hidden;line-height:1.65;font-size:14px}
+h1,h2,h3,h4{font-family:'Syne',sans-serif;line-height:1.15}
+.mono{font-family:'IBM Plex Mono',monospace}
+
+/* ── HEADER ── */
+header{background:var(--navy);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--line)}
+.logo{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--white)}.logo span{color:var(--gold)}
+.header-meta{display:flex;align-items:center;gap:16px}
+.version-pill{font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--gold-dim);color:var(--gold);padding:3px 10px;border-radius:20px;letter-spacing:.06em}
+.btn-export{background:var(--gold);color:var(--navy);font-family:'Syne',sans-serif;font-weight:600;font-size:12px;padding:8px 16px;border-radius:4px;border:none;cursor:pointer;transition:background .15s}
+.btn-export:hover{background:var(--gold2)}
+.btn-reset{background:transparent;color:rgba(255,255,255,0.45);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:7px 14px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);cursor:pointer;transition:all .15s}
+.btn-reset:hover{border-color:rgba(255,255,255,0.4);color:var(--white)}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:var(--sidebar) 1fr var(--score-w);min-height:calc(100vh - 57px)}
+
+/* ── LEFT NAV ── */
+.leftnav{background:var(--navy2);border-right:1px solid var(--line);position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;padding:20px 0}
+.nav-section{padding:0 16px;margin-bottom:6px}
+.nav-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.3);padding:10px 8px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .12s;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,0.05)}
+.nav-item.active{background:rgba(196,154,60,0.12);border:1px solid rgba(196,154,60,0.2)}
+.nav-badge{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;flex-shrink:0}
+.nav-text{font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);line-height:1.3;flex:1}
+.nav-item.active .nav-text{color:var(--gold)}
+.nav-score{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;flex-shrink:0}
+.nav-progress{height:3px;border-radius:2px;background:rgba(255,255,255,0.08);margin:0 10px 2px;overflow:hidden}
+.nav-progress-bar{height:100%;border-radius:2px;transition:width .3s}
+
+/* ── MAIN CONTENT ── */
+.main{padding:0;overflow-y:auto}
+.layer-section{display:none;padding:32px 36px}
+.layer-section.active{display:block}
+.layer-header{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--line-light)}
+.layer-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.layer-badge{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500}
+.layer-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.layer-desc{font-size:13px;color:var(--ink3);line-height:1.7;max-width:580px}
+
+/* ── CONTROL CARDS ── */
+.control-card{background:var(--white);border:1px solid var(--line-light);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:14px;transition:border-color .15s}
+.control-card:hover{border-color:rgba(11,22,40,0.2)}
+.ctrl-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ctrl-ref{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink3);letter-spacing:.06em;margin-bottom:4px}
+.ctrl-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--ink);line-height:1.3}
+.ctrl-desc{font-size:12.5px;color:var(--ink3);line-height:1.65;margin-bottom:16px}
+.ctrl-question{font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:10px}
+.rating-row{display:flex;gap:6px;flex-wrap:wrap}
+.rating-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 12px;border-radius:4px;border:1px solid var(--line-light);background:var(--paper);color:var(--ink3);cursor:pointer;transition:all .15s;white-space:nowrap}
+.rating-btn:hover{border-color:var(--ink3);color:var(--ink)}
+.rating-btn.sel-0{background:#fce8e8;border-color:#C94040;color:#8a2020}
+.rating-btn.sel-1{background:#fdf0e0;border-color:#B87020;color:#7a4a10}
+.rating-btn.sel-2{background:#e0eaf8;border-color:#2E6BA8;color:#1a4a8a}
+.rating-btn.sel-3{background:#e0f5ec;border-color:#2E8B6A;color:#1a6a46}
+.rating-btn.sel-4{background:#e0f5ec;border-color:#085041;color:#04342C}
+.ctrl-evidence{margin-top:12px}
+.ctrl-evidence label{font-size:11px;color:var(--ink3);display:block;margin-bottom:5px;font-family:'IBM Plex Mono',monospace;letter-spacing:.04em}
+.ctrl-evidence textarea{width:100%;border:1px solid var(--line-light);border-radius:6px;padding:8px 10px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;color:var(--ink2);background:var(--paper);resize:vertical;min-height:54px;transition:border-color .15s;line-height:1.55}
+.ctrl-evidence textarea:focus{outline:none;border-color:var(--gold)}
+.ctrl-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.ctrl-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;background:var(--paper2);color:var(--ink3)}
+.ctrl-score-display{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;min-width:40px;text-align:right;flex-shrink:0;line-height:1}
+.ctrl-score-label{font-size:10px;color:var(--ink3);text-align:right;margin-top:2px;font-family:'IBM Plex Mono',monospace}
+.recommendation{background:var(--gold-dim);border:1px solid rgba(196,154,60,0.25);border-radius:var(--r);padding:10px 14px;margin-top:10px;display:none}
+.recommendation.show{display:block}
+.rec-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.rec-text{font-size:12px;color:var(--ink2);line-height:1.6}
+
+/* ── RIGHT SCORE PANEL ── */
+.scorepanel{background:var(--navy);border-left:1px solid var(--line);position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;padding:24px 20px}
+.panel-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px}
+.panel-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:.06em;margin-bottom:20px}
+.overall-score{text-align:center;margin-bottom:20px}
+.overall-num{font-family:'Syne',sans-serif;font-size:56px;font-weight:800;line-height:1;color:var(--white)}
+.overall-denom{font-size:20px;color:rgba(255,255,255,0.3);font-family:'IBM Plex Mono',monospace}
+.overall-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-top:4px}
+.overall-grade{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;margin-top:8px;padding:4px 16px;border-radius:20px;display:inline-block}
+
+/* ── RADAR CHART ── */
+.radar-wrap{margin:16px 0;position:relative}
+#radar-canvas{width:100%;display:block}
+
+/* ── LAYER SCORES ── */
+.layer-scores{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.ls-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.ls-badge{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;flex-shrink:0}
+.ls-name{font-size:11px;color:rgba(255,255,255,0.6);flex:1;line-height:1.2}
+.ls-bar-wrap{width:60px;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;flex-shrink:0}
+.ls-bar{height:100%;border-radius:3px;transition:width .4s}
+.ls-score{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;flex-shrink:0;min-width:32px;text-align:right}
+
+/* ── SUMMARY REPORT ── */
+.summary-section{display:none;padding:32px 36px}
+.summary-section.active{display:block}
+.report-header{background:var(--navy);color:var(--white);border-radius:var(--r-lg);padding:28px 32px;margin-bottom:24px}
+.report-title{font-size:28px;font-weight:800;margin-bottom:4px}
+.report-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:20px}
+.grade-display{display:flex;gap:32px;flex-wrap:wrap}
+.grade-item{text-align:center}
+.grade-num{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;line-height:1}
+.grade-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:.08em;margin-top:4px}
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px}
+.report-card{background:var(--white);border:1px solid var(--line-light);border-radius:var(--r-lg);padding:20px}
+.report-card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line-light)}
+.finding{display:flex;gap:10px;padding:6px 0;font-size:12px;color:var(--ink2);border-bottom:1px solid var(--line-light);line-height:1.5}
+.finding:last-child{border-bottom:none}
+.finding-icon{flex-shrink:0;font-size:14px;margin-top:1px}
+.priority-recs{background:var(--white);border:1px solid var(--line-light);border-radius:var(--r-lg);padding:20px;margin-bottom:16px}
+.priority-rec{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line-light)}
+.priority-rec:last-child{border-bottom:none}
+.pr-num{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500;color:var(--ink3);line-height:1}
+.pr-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;margin-bottom:4px}
+.pr-body{font-size:12px;color:var(--ink3);line-height:1.6}
+.pr-effort{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:3px;white-space:nowrap;align-self:center}
+.compliance-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.compliance-card{background:var(--white);border:1px solid var(--line-light);border-radius:var(--r);padding:14px 16px}
+.comp-std{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;margin-bottom:6px}
+.comp-score{font-family:'Syne',sans-serif;font-size:24px;font-weight:700}
+.comp-bar{height:4px;border-radius:2px;background:var(--line-light);overflow:hidden;margin-top:8px}
+.comp-bar-fill{height:100%;border-radius:2px}
+.comp-note{font-size:11px;color:var(--ink3);margin-top:5px;line-height:1.5}
+
+/* ── MOBILE ── */
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .leftnav,.scorepanel{position:static;height:auto}
+  .leftnav{display:flex;overflow-x:auto;padding:10px;gap:6px;border-right:none;border-bottom:1px solid var(--line)}
+  .nav-section{padding:0;margin:0}
+  .nav-label,.nav-progress{display:none}
+  .nav-item{min-width:80px;flex-direction:column;text-align:center;padding:8px;gap:4px}
+  .nav-score{display:none}
+  .scorepanel{border-left:none;border-top:1px solid var(--line)}
+  .layer-section{padding:20px}
+}
+@media print{.leftnav,.scorepanel,.btn-export,.btn-reset{display:none}
+  .layout{display:block}.main{padding:0}.layer-section{display:block!important;page-break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><a href="index.html" style="color:inherit;text-decoration:none">← <span>SAIL</span>-9</a> Assessment Tool</div>
+  <div class="header-meta">
+    <span class="version-pill mono">v1.5 · KB 2026</span>
+    <a href="rag.html" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.55);text-decoration:none;letter-spacing:.04em;text-transform:uppercase;transition:color .15s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='rgba(255,255,255,0.55)'">RAG Architecture</a>
+    <button class="btn-reset" onclick="resetAll()">Reset</button>
+    <button class="btn-export" onclick="showReport()">Generate Report →</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT NAV -->
+  <nav class="leftnav" id="leftnav">
+    <div class="nav-section">
+      <div class="nav-label">Infrastructure</div>
+      <div class="nav-item active" onclick="showLayer(0)" id="nav-0">
+        <div class="nav-badge" style="background:rgba(139,92,246,0.2);color:#c4b5fd">L0</div>
+        <div class="nav-text">Infrastructure Baseline</div>
+        <div class="nav-score" id="nscore-0">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-0" style="width:0%;background:#8B5CF6"></div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Data layers</div>
+      <div class="nav-item" onclick="showLayer(1)" id="nav-1">
+        <div class="nav-badge" style="background:rgba(111,99,221,0.2);color:#aea8f8">L1</div>
+        <div class="nav-text">Data Sources</div>
+        <div class="nav-score" id="nscore-1">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-1" style="width:0%;background:#6b63d8"></div></div>
+      <div class="nav-item" onclick="showLayer(2)" id="nav-2">
+        <div class="nav-badge" style="background:rgba(111,99,221,0.2);color:#aea8f8">L2</div>
+        <div class="nav-text">Integration Pipeline</div>
+        <div class="nav-score" id="nscore-2">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-2" style="width:0%;background:#6b63d8"></div></div>
+      <div class="nav-item" onclick="showLayer(3)" id="nav-3">
+        <div class="nav-badge" style="background:rgba(46,139,106,0.2);color:#5ecba1">L3</div>
+        <div class="nav-text">Target Data Stores</div>
+        <div class="nav-score" id="nscore-3">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-3" style="width:0%;background:#2E8B6A"></div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Security</div>
+      <div class="nav-item" onclick="showLayer(4)" id="nav-4">
+        <div class="nav-badge" style="background:rgba(201,64,64,0.15);color:#f08080">L4</div>
+        <div class="nav-text">Data Security</div>
+        <div class="nav-score" id="nscore-4">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-4" style="width:0%;background:#C94040"></div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Agent stack</div>
+      <div class="nav-item" onclick="showLayer(5)" id="nav-5">
+        <div class="nav-badge" style="background:rgba(46,139,106,0.2);color:#5ecba1">L5</div>
+        <div class="nav-text">Agent Orchestration</div>
+        <div class="nav-score" id="nscore-5">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-5" style="width:0%;background:#2E8B6A"></div></div>
+      <div class="nav-item" onclick="showLayer(6)" id="nav-6">
+        <div class="nav-badge" style="background:rgba(184,112,32,0.2);color:#e8b86a">L6</div>
+        <div class="nav-text">MCP Gateway</div>
+        <div class="nav-score" id="nscore-6">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-6" style="width:0%;background:#B87020"></div></div>
+      <div class="nav-item" onclick="showLayer(7)" id="nav-7">
+        <div class="nav-badge" style="background:rgba(201,64,64,0.15);color:#f08080">L7</div>
+        <div class="nav-text">LLM & Guardrails</div>
+        <div class="nav-score" id="nscore-7">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-7" style="width:0%;background:#C94040"></div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Governance</div>
+      <div class="nav-item" onclick="showLayer(8)" id="nav-8">
+        <div class="nav-badge" style="background:rgba(46,107,168,0.2);color:#7ab4e8">L8</div>
+        <div class="nav-text">Prompt & SaaS DLP</div>
+        <div class="nav-score" id="nscore-8">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-8" style="width:0%;background:#2E6BA8"></div></div>
+      <div class="nav-item" onclick="showLayer(9)" id="nav-9">
+        <div class="nav-badge" style="background:rgba(46,139,106,0.15);color:#5ecba1">L9</div>
+        <div class="nav-text">Observability & Audit</div>
+        <div class="nav-score" id="nscore-9">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-9" style="width:0%;background:#2E8B6A"></div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Multi-Agent</div>
+      <div class="nav-item" onclick="showLayer(10)" id="nav-10">
+        <div class="nav-badge" style="background:rgba(201,64,64,0.15);color:#f08080">MA</div>
+        <div class="nav-text">Multi-Agent Threats</div>
+        <div class="nav-score" id="nscore-10">—</div>
+      </div>
+      <div class="nav-progress"><div class="nav-progress-bar" id="nprog-10" style="width:0%;background:#C94040"></div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Report</div>
+      <div class="nav-item" onclick="showReport()" id="nav-report" style="background:rgba(196,154,60,0.08);border:1px solid rgba(196,154,60,0.2)">
+        <div class="nav-badge" style="background:rgba(196,154,60,0.2);color:#C49A3C">📋</div>
+        <div class="nav-text" style="color:var(--gold)">Full Report</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="main-content">
+    <!-- Layers injected by JS -->
+  </main>
+
+  <!-- RIGHT SCORE PANEL -->
+  <aside class="scorepanel">
+    <div class="panel-title">Live score</div>
+    <div class="panel-sub mono">SAIL-9 ASSESSMENT · KB 2026</div>
+    <div class="overall-score">
+      <div>
+        <span class="overall-num" id="overall-num">0</span>
+        <span class="overall-denom">/100</span>
+      </div>
+      <div class="overall-label">Overall maturity</div>
+      <div class="overall-grade" id="overall-grade" style="background:rgba(201,64,64,0.15);color:#f08080">Not started</div>
+    </div>
+    <div class="radar-wrap">
+      <canvas id="radar-canvas" width="280" height="260"></canvas>
+    </div>
+    <div class="layer-scores" id="layer-scores-panel"></div>
+  </aside>
+
+</div>
+
+<script>
+// ══ DATA ══════════════════════════════════════════════════════════════════════
+const LAYERS = [
+  {
+    id:0, code:'L0', name:'Infrastructure Security Baseline',
+    color:'#8B5CF6', bg:'rgba(139,92,246,0.12)',
+    desc:'Hardware, OS, network, containers, secrets, PAM, and vulnerability management. The foundation all other layers depend on.',
+    controls:[
+      {ref:'L0.1',name:'OS hardening',q:'Is a CIS Benchmark-compliant OS baseline applied to all SAIL-9 hosts?',
+       desc:'All VMs running AI workloads have CIS L2 baseline applied, unnecessary services disabled, AppArmor/SELinux enforcing, and automated patching with <30-day critical patch SLA.',
+       recs:['Apply Ansible CIS hardening roles to all AI infrastructure hosts','Enable AppArmor or SELinux in enforcing mode','Configure unattended-upgrades for security patches'],
+       tags:['ISO 27001 A.8.8','ISO 27001 A.8.9','CIS Benchmark']},
+      {ref:'L0.2',name:'Network segmentation',q:'Is the AI stack isolated in a dedicated network segment with east-west microsegmentation?',
+       desc:'AI components (agent, data stores, LLM, gateway) are in a dedicated VLAN/segment, isolated from corporate LAN. Agent can only reach L3 stores and L6 gateway — not the internet or other corporate systems.',
+       recs:['Create dedicated VLAN for AI stack components','Implement east-west firewall rules: agent → L3/L6 only','Deploy Suricata IDS on the AI network segment'],
+       tags:['ISO 27001 A.8.20','ISO 27001 A.8.22','NIST ZTA SP 800-207']},
+      {ref:'L0.3',name:'Container security',q:'Are all containerised SAIL-9 components scanned, non-root, and runtime-monitored?',
+       desc:'Trivy image scanning on every build, Falco runtime threat detection active, no privileged containers, distroless or minimal base images, Kubernetes RBAC locked to least-privilege service accounts.',
+       recs:['Integrate Trivy into CI/CD pipeline — block critical CVEs','Deploy Falco with standard ruleset on all AI containers','Enforce non-root containers via OPA/Kyverno policy'],
+       tags:['CIS Docker Benchmark','CIS K8s Benchmark','ISO 27001 A.8.9']},
+      {ref:'L0.4',name:'Secrets management',q:'Are all API keys, tokens and credentials stored in a secrets manager — zero secrets in env vars or config files?',
+       desc:'HashiCorp Vault or equivalent deployed. No credentials in environment variables, config files, or source code. git-secrets or truffleHog scanning pre-commit.',
+       recs:['Deploy HashiCorp Vault (OSS) for all SAIL-9 secrets','Run truffleHog scan on all repositories — remediate findings','Configure automatic secret rotation for all service accounts'],
+       tags:['ISO 27001 A.8.24','ISO 27001 A.8.13','NIST SP 800-57']},
+      {ref:'L0.5',name:'Privileged access management',q:'Is JIT privileged access enforced — no standing admin access to AI infrastructure?',
+       desc:'Teleport or equivalent PAM deployed. JIT access for all privileged sessions. Session recording active. No standing root or admin access to any AI infrastructure component.',
+       recs:['Deploy Teleport (OSS) for privileged access to AI hosts','Configure JIT access policies — remove standing privileges','Enable session recording for all privileged SSH/kubectl sessions'],
+       tags:['ISO 27001 A.8.2','ISO 27001 A.8.15','NIST AI RMF GV-1.2']},
+      {ref:'L0.6',name:'Vulnerability management',q:'Is continuous vulnerability scanning active across all SAIL-9 hosts, containers, and Python dependencies?',
+       desc:'Wazuh or Qualys for host-level scanning. Trivy for containers. Dependabot or Snyk for Python/Node agent dependencies. Critical CVEs patched within 30 days.',
+       recs:['Deploy Wazuh for continuous host vulnerability scanning','Configure Dependabot on all agent code repositories','Establish 30-day SLA for critical CVE patching — track in ticketing system'],
+       tags:['ISO 27001 A.8.8','CIS Control 7','OWASP Dependency-Check']},
+    ]
+  },
+  {
+    id:1, code:'L1', name:'Data Sources',
+    color:'#6b63d8', bg:'rgba(111,99,221,0.12)',
+    desc:'Legacy ERP, CRM, OSS/BSS, mainframe, and file stores that supply raw data to the AI pipeline.',
+    controls:[
+      {ref:'L1.1',name:'Data source inventory',q:'Is a complete inventory of all data sources feeding the AI system documented and maintained?',
+       desc:'All source systems catalogued with owner, data classification, PII flag, residency requirement, and schema documentation.',
+       recs:['Conduct a data source discovery sprint — document all candidate sources','Classify each source for PII, sensitivity, and data residency','Assign a data owner for each source with accountability for quality'],
+       tags:['ISO 42001 cl.8.5','ISO 27001 A.8.1','NIST AI RMF MP-1.1']},
+      {ref:'L1.2',name:'PII classification at source',q:'Has PII been identified and classified in all source systems before data enters the pipeline?',
+       desc:'Every PII-bearing field in source systems documented. Classification taxonomy applied. Data residency requirement confirmed per source.',
+       recs:['Run Varonis classification scan on all source systems','Produce a PII field inventory per data source','Map each PII field to its residency jurisdiction before pipeline build'],
+       tags:['ISO 27001 A.5.12','ISO 42001 cl.8.5','CII 2026']},
+      {ref:'L1.3',name:'Source data quality baseline',q:'Has a baseline data quality assessment been conducted on source systems before pipeline build?',
+       desc:'Data profiling completed. Null rates, duplicate rates, referential integrity, and format consistency documented per source. Known quality issues logged.',
+       recs:['Run data profiling tools (Great Expectations, dbt tests) on source extracts','Document null rate, duplicate rate, and schema violations per source','Set minimum quality thresholds before data enters the staging zone'],
+       tags:['ISO 42001 cl.8.5','ISO 25059:2023','NIST AI RMF MS-1.1']},
+    ]
+  },
+  {
+    id:2, code:'L2', name:'Integration & Data Pipeline',
+    color:'#6b63d8', bg:'rgba(111,99,221,0.12)',
+    desc:'ETL/ELT pipeline from legacy sources through staging, cleanse, and quarantine zones to AI-ready target stores.',
+    controls:[
+      {ref:'L2.1',name:'Pipeline tool deployment',q:'Is an enterprise integration tool (Actian DataConnect or equivalent) deployed and connecting to source systems?',
+       desc:'Integration platform deployed with connectors to all required source systems. CDC or scheduled extraction configured. Pipeline runs successfully end-to-end.',
+       recs:['Deploy Actian DataConnect or IBM DataStage on a dedicated integration VM','Configure connectors to priority source systems (ERP, BSS, mainframe)','Run first end-to-end extraction and validate record counts'],
+       tags:['ISO 42001 cl.8.5','L2 Phase 1 gate']},
+      {ref:'L2.2',name:'Staging zone — raw and cleanse',q:'Is a staging zone with raw, cleanse, and quarantine sub-zones deployed and operational?',
+       desc:'Three-zone staging: raw (as-is from source), cleanse (dedup, null handling, type normalisation, referential checks), quarantine (failed records held for reprocess). Data quality >85% on first run is the pass gate.',
+       recs:['Build PostgreSQL staging database with raw/cleanse/quarantine schemas','Implement deduplication, null handling, and type normalisation rules','Set up quarantine logging — review quarantine fill rate daily for first week'],
+       tags:['L2 fail-fast gate: >85% quality','ISO 42001 cl.8.5']},
+      {ref:'L2.3',name:'Historical data backfill',q:'Has the historical data backfill scope been defined and scheduled?',
+       desc:'Backfill date range, volume estimate, quality acceptance criteria, and schedule documented before sprint 3. For telecoms: typically 12–24 months of CDR/billing history minimum.',
+       recs:['Define backfill scope: date range, systems, volume estimate','Run a backfill pilot on a 3-month subset before full backfill','Schedule backfill to avoid peak billing system load windows'],
+       tags:['Change management','Delivery risk']},
+      {ref:'L2.4',name:'Data residency enforcement',q:'Is data residency enforced at the pipeline level — sensitive data does not leave the sovereign perimeter during ETL?',
+       desc:'All ETL processing occurs within the sovereign perimeter. No cloud ETL services process customer PII unless residency compliance is formally accepted. Processing location documented per pipeline.',
+       recs:['Document processing location for each pipeline — confirm within sovereign perimeter','Review any cloud ETL components for data residency compliance','Obtain formal residency acceptance for any cross-border processing'],
+       tags:['CII 2026','ISO 27001 A.5.33','Sovereign deployment']},
+    ]
+  },
+  {
+    id:3, code:'L3', name:'Target Data Stores',
+    color:'#2E8B6A', bg:'rgba(46,139,106,0.12)',
+    desc:'Clean, AI-queryable databases that the agent reads from exclusively. Never the raw legacy systems.',
+    controls:[
+      {ref:'L3.1',name:'Target DB schema designed and populated',q:'Is the target database schema designed for agent query patterns and populated with clean data?',
+       desc:'Schema optimised for agent query patterns (not OLTP). Indexes on agent-queried fields. P95 query latency <2s on representative data volume is the pass gate.',
+       recs:['Design schema based on agent query analysis — not ETL convenience','Run EXPLAIN ANALYZE on representative agent queries — add missing indexes','Benchmark P95 latency with 10K representative rows before go-live'],
+       tags:['L3 fail-fast gate: P95 <2s','ISO 42001 cl.8.5']},
+      {ref:'L3.2',name:'Vector store for RAG',q:'Is a vector store deployed and populated for semantic search / RAG use cases?',
+       desc:'pgvector or ChromaDB deployed. Knowledge base documents ingested via the L2 pipeline — not direct upload. RAG retrieval accuracy tested on representative query set.',
+       recs:['Deploy pgvector extension on existing PostgreSQL (zero license cost)','Ingest all knowledge base content through L2 pipeline — no direct uploads','Test RAG retrieval accuracy on 20-case representative query set before go-live'],
+       tags:['Phase 2 deployment','NIST AI RMF MS-1.1']},
+      {ref:'L3.3',name:'RAG poisoning prevention',q:'Is the RAG knowledge base protected against retrieval poisoning — malicious documents causing manipulated responses?',
+       desc:'All content entering the vector store passes through L2 pipeline with content validation. Write access to vector store restricted to pipeline service account. Phase 2 red-team test of RAG layer completed.',
+       recs:['Restrict vector store write access to L2 pipeline service account only','Add content validation step in pipeline before vector store ingestion','Run adversarial RAG red-team test: inject malicious documents, verify agent rejects manipulated responses'],
+       tags:['Phase 2 gate','MAESTRO MAT-3.3','OWASP LLM Top 10']},
+      {ref:'L3.4',name:'Agent read access — no legacy direct access',q:'Is the agent strictly confined to reading from L3 target stores — with zero direct access to legacy source systems?',
+       desc:'Agent service account has read-only access to L3 target stores only. No database credentials for L1 source systems in agent config or memory. Verified via network firewall rules.',
+       recs:['Audit agent service account permissions — remove any source system access','Verify via firewall rules that agent cannot reach L1 source systems directly','Test: attempt direct legacy DB connection from agent host — confirm blocked'],
+       tags:['SAIL-9 core principle','ISO 27001 A.8.3','L3 governance rule']},
+    ]
+  },
+  {
+    id:4, code:'L4', name:'Data Security & Governance',
+    color:'#C94040', bg:'rgba(201,64,64,0.12)',
+    desc:'Data classification, identity-based access monitoring, anomaly detection, and ISO 27001 audit evidence generation.',
+    controls:[
+      {ref:'L4.1',name:'Data classification deployed',q:'Is a data security tool (Varonis or equivalent) deployed and classifying all PII in AI data stores?',
+       desc:'Varonis Atlas or equivalent deployed on all L3 target stores. PII classification taxonomy applied. Zero unclassified PII-bearing fields in agent-accessible stores.',
+       recs:['Deploy Varonis Atlas on all L3 target database instances','Run initial classification scan — review and validate taxonomy mapping','Target: zero unclassified PII fields before agent queries production data'],
+       tags:['ISO 27001 A.5.12','ISO 42001 cl.8.5','L4 Phase 1 gate']},
+      {ref:'L4.2',name:'Service account behavioural baseline',q:'Has a behavioural baseline been established for the agent service account — with anomaly alerts configured?',
+       desc:'Varonis baseline captures normal agent query patterns: tables accessed, query volume, time of day, record volume. Alerts configured for deviations. False-positive rate <5% after tuning.',
+       recs:['Run Varonis in observe-only mode for 2 weeks to establish agent baseline','Configure anomaly alerts: >3x query volume, new table access, off-hours activity','Tune alert thresholds — target <5% false-positive rate'],
+       tags:['ISO 27001 A.8.15','NIST AI RMF GV-1.2','Varonis baseline']},
+      {ref:'L4.3',name:'SIEM integration',q:'Are Varonis alerts feeding into the SIEM with alert-to-notification time <5 minutes?',
+       desc:'Varonis alerts forward to SIEM (Splunk, Sentinel, or QRadar) within 5 minutes. Alert rules tested via synthetic anomaly injection. DPO notification workflow documented.',
+       recs:['Configure Varonis syslog forwarding to SIEM','Test: trigger synthetic anomaly — verify SIEM alert within 5 minutes','Document DPO notification workflow for confirmed data incidents'],
+       tags:['ISO 27001 A.8.15','ISO 27001 A.8.16','<5min target']},
+      {ref:'L4.4',name:'Access rights review process',q:'Is a formal access rights review process in place for all AI system service accounts?',
+       desc:'Quarterly access rights review conducted. Service account permissions documented against least-privilege policy. Excess permissions remediated before agent goes live. ISO 27001 Annex A.8.3 evidence generated.',
+       recs:['Document current service account permissions for all AI components','Compare against least-privilege matrix — flag excess permissions for remediation','Schedule quarterly automated access rights review via Varonis reports'],
+       tags:['ISO 27001 A.8.3','ISO 42001 cl.8.5','Quarterly cadence']},
+    ]
+  },
+  {
+    id:5, code:'L5', name:'Agent Orchestration',
+    color:'#2E8B6A', bg:'rgba(46,139,106,0.12)',
+    desc:'Agent framework selection, memory governance, context assembly, and accuracy validation.',
+    controls:[
+      {ref:'L5.1',name:'Agent framework deployed',q:'Is an agent orchestration framework (n8n or CrewAI) deployed and executing the target use case end-to-end?',
+       desc:'n8n or CrewAI deployed, self-hosted. First use case implemented end-to-end: customer request → data retrieval from L3 → context assembly → LLM → response. No direct legacy system access.',
+       recs:['Deploy n8n (simpler flows) or CrewAI (complex reasoning) on self-hosted infrastructure','Build first use case: customer balance enquiry as the proof-of-concept','Verify: agent queries L3 only — no source system access in agent code or config'],
+       tags:['Phase 1 implementation','OSS self-hosted','SAIL-9 L5']},
+      {ref:'L5.2',name:'Agent accuracy gate',q:'Does the agent answer >90% of the 50-case representative test battery correctly for the first use case?',
+       desc:'>90% accuracy on a representative 50-case test battery is the fail-fast gate. Below this threshold, fix context assembly and prompt engineering before expanding to additional use cases.',
+       recs:['Build a 50-case test battery covering the full range of expected customer queries','Run the battery after each context assembly change — track accuracy delta','Below 90%: diagnose whether failure is data quality (L3), context assembly (L5), or prompt quality (L7)'],
+       tags:['L5 fail-fast gate: >90%','NIST AI RMF MS-1.1','ISO 25059:2023']},
+      {ref:'L5.3',name:'Agent memory governance',q:'Is agent working memory scoped, time-limited, and isolated — no cross-session or cross-customer data leakage?',
+       desc:'Agent memory scoped to single session/customer. No PII persisted in Redis or vector store beyond session TTL. No shared memory accessible between concurrent agent instances. Memory contents do not appear in logs.',
+       recs:['Define TTL for all session memory objects — enforce via Redis EXPIRE','Audit agent memory contents — confirm no PII persists beyond session','Implement memory isolation: separate Redis key namespace per session/customer'],
+       tags:['Agent memory governance','Privacy risk','MAESTRO MAT-3.3']},
+      {ref:'L5.4',name:'Model card and system card',q:'Is a model card and system card documented for the AI system per ISO 42001 clause 8.2?',
+       desc:'Model card documents: model name/version, intended purpose, out-of-scope uses, known limitations, training data provenance. System card documents: deployment context, human oversight mechanisms, escalation paths.',
+       recs:['Complete model card template — review with CISO and data owner before go-live','Document all out-of-scope uses explicitly — include in customer-facing disclosure','Review model card at each new model version or use case expansion'],
+       tags:['ISO 42001 cl.8.2','P1 gate','NIST AI RMF MP-1.1']},
+    ]
+  },
+  {
+    id:6, code:'L6', name:'MCP Gateway — Tool Control Plane',
+    color:'#B87020', bg:'rgba(184,112,32,0.12)',
+    desc:'Mandatory governance layer for all agent tool calls — authentication, scoping, rate limiting, and audit logging.',
+    controls:[
+      {ref:'L6.1',name:'MCP gateway deployed',q:'Is a MCP gateway (Kong or equivalent) deployed and proxying 100% of agent tool calls?',
+       desc:'Kong AI Gateway or LiteLLM deployed. Every tool call from the agent passes through the gateway — zero direct tool calls. Audit log confirms 100% coverage.',
+       recs:['Deploy Kong AI Gateway OSS on the AI network segment','Configure Kong as the sole egress point for agent tool calls','Verify via audit log: confirm zero tool calls bypassing Kong after deployment'],
+       tags:['L6 mandatory gate: 100%','SAIL-9 core control','MCP security']},
+      {ref:'L6.2',name:'Per-agent tool permission matrix',q:'Is a least-privilege tool permission matrix defined and enforced per agent role?',
+       desc:'Each agent role (orchestrator, data agent, billing agent) has a defined, documented permission set — specific tools it may call. No agent can call tools outside its permission set. Enforced at Kong via OAuth scopes.',
+       recs:['Define tool permission matrix: agent role → allowed tools (table format)','Implement via Kong OAuth 2.1 scopes — test enforcement for each role','Review permission matrix monthly — reduce scope if any tool goes unused'],
+       tags:['OAuth 2.1','Least-privilege','ISO 27001 A.8.3']},
+      {ref:'L6.3',name:'Rate limits and cost controls',q:'Are per-agent rate limits configured to prevent runaway tool calls and cost overrun?',
+       desc:'Rate limits configured per agent role and per tool. Cost ceiling enforced. Alerts configured for rate limit breaches. Baseline cost-per-interaction established in Phase 1.',
+       recs:['Set Kong rate limits: requests/minute per agent role per tool','Establish cost-per-interaction baseline in first 2 weeks of production','Alert on rate limit breach: investigate whether legitimate demand or agent anomaly'],
+       tags:['Cost governance','SAIL-9 cost metrics','Kong rate limiting']},
+      {ref:'L6.4',name:'Human-in-loop for high-risk actions',q:'Do high-risk or irreversible tool calls require human approval before execution?',
+       desc:'A defined list of high-risk actions (account modification, financial transaction, data deletion) requires human approval via Kong Airlock or equivalent. Approval workflow documented and tested.',
+       recs:['Define high-risk action list — document approval workflow for each','Deploy Kong Airlock or implement custom approval webhook','Test approval flow: trigger a high-risk action, verify approval request fires before execution'],
+       tags:['ISO 42001 cl.8.6','Human oversight','NIST AI RMF GV-1.2']},
+      {ref:'L6.5',name:'MCP audit trail — SIEM integration',q:'Are all MCP tool calls logged with full context and feeding into the SIEM?',
+       desc:'Kong logs every tool call: agent identity, tool name, parameters (PII-masked), response status, latency. Logs forwarded to SIEM within 5 minutes. Tool call anomaly detection rule active.',
+       recs:['Enable Kong audit logging — verify PII masking before log forwarding','Configure SIEM ingestion of Kong audit logs','Build anomaly detection rule: agent calling tools outside normal pattern'],
+       tags:['ISO 27001 A.8.15','L6 audit','Kong OTel']},
+    ]
+  },
+  {
+    id:7, code:'L7', name:'LLM & Inference Guardrails',
+    color:'#C94040', bg:'rgba(201,64,64,0.12)',
+    desc:'LLM selection, NeMo Guardrails inference scanning, LlamaFirewall alignment, and adversarial testing.',
+    controls:[
+      {ref:'L7.1',name:'LLM deployed — sovereign or cloud with residency accepted',q:'Is the LLM deployed as a sovereign local model (Ollama) or with cloud residency formally risk-accepted?',
+       desc:'Ollama with a local model (Llama, Mistral, Phi) is the sovereign default. If using a cloud LLM (Claude API, GPT), data residency risk has been formally assessed and accepted by CISO in writing.',
+       recs:['Deploy Ollama on a GPU-enabled VM within the sovereign perimeter','If cloud LLM: obtain formal residency acceptance from CISO — document in risk register','Benchmark local model accuracy against use case requirements before go-live'],
+       tags:['Sovereign deployment','CII 2026','Data residency']},
+      {ref:'L7.2',name:'NeMo Guardrails deployed and tuned',q:'Are NeMo Guardrails deployed, scanning all prompts and responses, with <5% legitimate false-positive rate?',
+       desc:'NeMo Guardrails deployed on-prem. Prompt injection, PII extraction, jailbreak, and policy violation rules active. False-positive rate <5% on legitimate traffic after tuning.',
+       recs:['Deploy NeMo Guardrails on the same host or container as the LLM','Author input rails: prompt injection, PII extraction, jailbreak detection','Tune output rails — target <5% false-positive on legitimate production traffic'],
+       tags:['L7 Phase 1 gate','NeMo OSS','Prompt injection']},
+      {ref:'L7.3',name:'Adversarial red-team: >98% block rate',q:'Has an adversarial prompt battery been run — with >98% block rate on injections, jailbreaks, and PII extraction attempts?',
+       desc:'>98% block rate on a representative adversarial prompt battery (minimum 100 prompts across injection, jailbreak, and PII extraction categories) is the Phase 1 production gate.',
+       recs:['Build adversarial battery: 40 injection prompts, 30 jailbreak attempts, 30 PII extraction attempts','Run battery against NeMo-guarded LLM — document results','Below 98%: strengthen guardrail rules, re-run battery before go-live'],
+       tags:['L7 fail-fast gate: >98%','OWASP LLM Top 10','Red-team']},
+      {ref:'L7.4',name:'LlamaFirewall agent alignment',q:'Is LlamaFirewall (or equivalent) deployed for agent alignment and chain-of-thought policy checking?',
+       desc:'LlamaFirewall deployed in Phase 2. PromptGuard 2 active for jailbreak detection. Agent alignment checks active on tool call reasoning. CodeShield enabled if agent has code execution capability.',
+       recs:['Deploy LlamaFirewall in Phase 2 alongside existing NeMo stack','Enable PromptGuard 2 — test against LlamaFirewall benchmark prompts','If agent executes code: enable CodeShield — test against OWASP code injection patterns'],
+       tags:['Phase 2 deployment','MAESTRO MAT-2.1','LlamaFirewall']},
+      {ref:'L7.5',name:'Hallucination rate monitored: <10%',q:'Is the hallucination rate monitored continuously and confirmed below 10% in production?',
+       desc:'Automated fact-checking of agent responses against L3 ground truth. Hallucination rate <10% monitored weekly. Exceeding 10% triggers context assembly review. Arize or Galileo scoring active.',
+       recs:['Build automated fact-check: sample 10% of production responses against L3 ground truth','Deploy Arize or Galileo for continuous hallucination scoring','Alert if weekly hallucination rate exceeds 10% — trigger context assembly review'],
+       tags:['AI performance metric','<10% target','NIST AI RMF MS-1.1']},
+    ]
+  },
+  {
+    id:8, code:'L8', name:'Prompt & SaaS DLP',
+    color:'#2E6BA8', bg:'rgba(46,107,168,0.12)',
+    desc:'PII detection at the prompt boundary, SaaS coverage for shadow AI, and MCP-aware DLP scanning.',
+    controls:[
+      {ref:'L8.1',name:'Prompt DLP deployed — zero PII at LLM boundary',q:'Is DLP scanning active on all prompts before they reach the LLM — with zero PII incidents confirmed?',
+       desc:'Nightfall AI or LLM Guard deployed at the prompt boundary. PII, credentials, and sensitive content stripped before reaching the LLM. Zero PII incidents at the LLM boundary is the production target.',
+       recs:['Deploy LLM Guard (OSS sovereign) at the prompt assembly point in L5','Configure PII detection rules: MSISDN, account numbers, full names, credentials','Monitor weekly: target zero PII incidents at LLM boundary — any incident triggers policy review'],
+       tags:['L8 gate: zero PII','DLP','Nightfall / LLM Guard']},
+      {ref:'L8.2',name:'Shadow AI monitoring',q:'Is staff use of unsanctioned AI tools (ChatGPT, Copilot) with company data monitored and controlled?',
+       desc:'Nightfall browser plugin or equivalent deployed on staff endpoints. Shadow AI usage reports reviewed weekly. Staff awareness training completed. Sanctioned AI tools list published.',
+       recs:['Deploy Nightfall endpoint agent or equivalent on all staff endpoints','Review shadow AI report weekly — identify high-risk usage patterns','Publish sanctioned AI tools policy — conduct staff awareness session'],
+       tags:['Shadow AI','Staff awareness','Phase 2']},
+      {ref:'L8.3',name:'Residency compliance for DLP tool',q:'Has the data residency posture of the DLP tool itself been assessed — does scanning data pass through the DLP vendor\'s cloud?',
+       desc:'If using cloud-based DLP (Nightfall), formal residency assessment completed. If data residency prohibits cloud DLP, LLM Guard (OSS, self-hosted) is deployed as the sovereign alternative.',
+       recs:['Review Nightfall data processing agreement — confirm processing location','If residency concern: replace with LLM Guard (OSS, self-hosted) at no license cost','Document residency decision in risk register with CISO sign-off'],
+       tags:['Data residency','CII 2026','LLM Guard sovereign alt']},
+    ]
+  },
+  {
+    id:9, code:'L9', name:'Observability, Audit & Feedback',
+    color:'#2E8B6A', bg:'rgba(46,139,106,0.12)',
+    desc:'Agent tracing, audit log retention, SIEM integration, ISO 42001 internal audit, and feedback loop for continuous improvement.',
+    controls:[
+      {ref:'L9.1',name:'Agent reasoning trace — LangSmith',q:'Is every production agent decision traceable via LangSmith or equivalent — tool calls, reasoning steps, and outputs logged?',
+       desc:'LangSmith (if CrewAI) or n8n execution logs (if n8n) active in production. Every agent decision traceable to: input, tools called, LLM response, final output. Regulators and auditors can query reasoning trace.',
+       recs:['Configure LangSmith project for production agent — enable trace for all runs','Test: run a production query, verify full chain-of-thought visible in LangSmith','Set LangSmith trace retention to 90 days minimum — align with audit log policy'],
+       tags:['ISO 42001 cl.9.1','Explainability','NIST AI RMF MS-2.1']},
+      {ref:'L9.2',name:'OTel instrumentation and SIEM integration',q:'Are all SAIL-9 layers instrumented with OpenTelemetry and feeding into the SIEM?',
+       desc:'OTel spans from Kong (L6), NeMo (L7), Nightfall (L8), and LangSmith (L9) aggregated. SIEM ingesting all events. Alert rules tuned and tested via synthetic anomaly injection.',
+       recs:['Deploy OTel collector — configure Kong, NeMo, and application spans','Ingest OTel data into SIEM — build dashboard for AI system health','Run synthetic anomaly injection weekly — verify SIEM alert fires within 5 minutes'],
+       tags:['ISO 27001 A.8.15','OTel','SIEM integration']},
+      {ref:'L9.3',name:'Audit log retention: 90 days minimum',q:'Are all AI system audit logs retained for a minimum of 90 days with enforced retention policy?',
+       desc:'Audit logs from L4 (Varonis), L6 (Kong), L7 (NeMo), L8 (Nightfall), and L9 (LangSmith) retained for 90+ days. Retention policy documented and enforced. Logs tamper-evident.',
+       recs:['Document retention policy: 90 days active, 12 months archive minimum','Configure SIEM log retention — enforce via immutable storage or WORM','Test log integrity: verify logs cannot be modified post-write'],
+       tags:['ISO 27001 A.8.15','CII 2026','90-day minimum']},
+      {ref:'L9.4',name:'ISO 42001 cl.9.2 — internal AI audit',q:'Is a semi-annual internal AI audit programme in place covering all SAIL-9 layers against documented controls?',
+       desc:'Formal internal AI audit per ISO 42001 clause 9.2 scheduled at 6-month intervals. Audit programme documented with scope, criteria, and evidence sources. First audit completed in Phase 3.',
+       recs:['Document internal AI audit programme — scope: all 10 SAIL-9 layers','Schedule first audit for Month 9–10 — assign internal auditor or engage external party','Use L4/L6/L9 logs as primary evidence — produce formal audit report with findings'],
+       tags:['ISO 42001 cl.9.2','Phase 3 gate','Internal audit']},
+      {ref:'L9.5',name:'Feedback loop — Actian write-back',q:'Is a feedback loop in place that writes AI interaction outcomes back to the data layer for model improvement?',
+       desc:'Phase 3: interaction outcomes (accuracy rating, escalation flag, customer satisfaction signal) written back to Actian via the L2 pipeline. Retraining trigger based on drift detection. Continual improvement cycle active.',
+       recs:['Build outcome logging: capture accuracy rating and escalation flag per interaction','Write outcome data back to Actian via dedicated pipeline — separate from operational data','Define retraining trigger: >10% accuracy drop over 4 consecutive weeks → retraining sprint'],
+       tags:['Phase 3','ISO 42001 cl.10.2','Continual improvement']},
+    ]
+  },
+  {
+    id:10, code:'MA', name:'Multi-Agent Threat Modelling',
+    color:'#C94040', bg:'rgba(201,64,64,0.12)',
+    desc:'MAESTRO-aligned multi-agent security controls for agent identity, collusion prevention, cascade failure mitigation, and agentic misalignment detection.',
+    controls:[
+      {ref:'MA.1',name:'MAESTRO threat modelling exercise',q:'Has a MAESTRO threat modelling exercise been completed — populating the ISO 42001 clause 6.1 risk register?',
+       desc:'MAESTRO 7-layer threat modelling exercise completed. Every MAT risk category assessed for likelihood and impact. Risk register populated and accepted by CISO. Each risk mapped to a SAIL-9 control.',
+       recs:['Download MAESTRO framework from Cloud Security Alliance website','Conduct 2-day threat modelling workshop with security engineer and AI architect','Output: risk register with MAT reference, likelihood, impact, owner, and SAIL-9 control mapping'],
+       tags:['ISO 42001 cl.6.1','MAESTRO CSA 2025','Risk register']},
+      {ref:'MA.2',name:'A2A protocol security',q:'Are all agent-to-agent communications secured with TLS, authenticated with OAuth 2.1, and routed through Kong?',
+       desc:'No direct agent-to-agent communication. All A2A messaging via Kong with TLS 1.3 and OAuth 2.1 agent identity tokens. Message signing enforced. A2A routing logs active in SIEM.',
+       recs:['Configure Kong A2A routing — disable direct agent-to-agent network paths via firewall','Implement OAuth 2.1 agent identity tokens — unique per agent role','Enable message signing — verify signature validation on all A2A messages'],
+       tags:['MAESTRO MAT-1.2','A2A security','Kong A2A routing']},
+      {ref:'MA.3',name:'Agent spawning governance',q:'Is autonomous agent spawning prohibited — all sub-agent creation requires Kong authorisation and human approval for high-risk?',
+       desc:'No agent can spawn a sub-agent without explicit Kong authorisation. High-risk agent spawning (new tool access, elevated permissions) requires human approval via Airlock. Falco runtime alert on unauthorised spawn attempt.',
+       recs:['Configure Kong: require auth token for any agent spawning call','Deploy Falco rule: alert on container creation from within agent container','Add high-risk spawning to the human-in-loop list in L6.4'],
+       tags:['MAESTRO MAT-5.2','L6 governance','Falco runtime']},
+      {ref:'MA.4',name:'Cross-agent correlation in SIEM',q:'Are cross-agent correlation rules active in the SIEM — detecting coordinated anomalous behaviour across multiple agents?',
+       desc:'SIEM correlation rules detect: multiple agents accessing the same unusual data simultaneously, coordinated rate limit breaches across agent roles, A2A message patterns inconsistent with operational baseline.',
+       recs:['Build SIEM correlation rule: flag when 2+ agents access same non-standard table within 5 minutes','Build rule: coordinated rate limit breach across 2+ agent roles → escalate to SOC','Review correlation results weekly — tune to reduce false positives below 5%'],
+       tags:['MAESTRO MAT-2.2','SIEM correlation','Collusion detection']},
+      {ref:'MA.5',name:'Deceptive alignment detection',q:'Is continuous production monitoring with randomised adversarial testing cadence in place to detect deceptive alignment?',
+       desc:'Agent behaves correctly in testing but pursues different objectives in production. Mitigated by: continuous accuracy monitoring (L9), unpredictable adversarial test injections into production (not scheduled), LangSmith prod vs test trace comparison.',
+       recs:['Randomise adversarial test injection cadence — do not run at fixed intervals','Compare LangSmith traces for identical queries run in test vs production — flag divergence','Any production accuracy drop unexplained by data quality → mandatory manual trace review'],
+       tags:['MAESTRO MAT-5.3','Deceptive alignment','Anthropic 2025 research']},
+    ]
+  }
+];
+
+const RATINGS = [
+  {val:0, label:'0 — Not implemented', short:'Not done'},
+  {val:1, label:'1 — Planned only', short:'Planned'},
+  {val:2, label:'2 — Partially implemented', short:'Partial'},
+  {val:3, label:'3 — Implemented, not tested', short:'Implemented'},
+  {val:4, label:'4 — Implemented & validated', short:'Validated'},
+];
+
+const SCORE_COLORS = ['#C94040','#B87020','#2E6BA8','#2E8B6A','#085041'];
+const GRADE_THRESHOLDS = [
+  {min:85, grade:'Optimised', bg:'rgba(8,80,65,0.2)', color:'#5ecba1'},
+  {min:70, grade:'Managed', bg:'rgba(46,139,106,0.15)', color:'#2E8B6A'},
+  {min:55, grade:'Defined', bg:'rgba(46,107,168,0.15)', color:'#7ab4e8'},
+  {min:40, grade:'Developing', bg:'rgba(184,112,32,0.15)', color:'#e8b86a'},
+  {min:20, grade:'Initial', bg:'rgba(201,64,64,0.15)', color:'#f08080'},
+  {min:0,  grade:'Not started', bg:'rgba(201,64,64,0.15)', color:'#f08080'},
+];
+
+// state
+let scores = {}; // {controlRef: rating (0-4)}
+let notes = {};  // {controlRef: string}
+let currentLayer = 0;
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+function init(){
+  buildLayers();
+  buildScorePanel();
+  showLayer(0);
+  updateAll();
+}
+
+function buildLayers(){
+  const main = document.getElementById('main-content');
+  LAYERS.forEach(layer => {
+    const sec = document.createElement('div');
+    sec.className = 'layer-section';
+    sec.id = `layer-${layer.id}`;
+    sec.innerHTML = `
+      <div class="layer-header">
+        <div class="layer-eyebrow">
+          <div class="layer-badge" style="background:${layer.bg};color:${layer.color};font-size:11px">${layer.code}</div>
+          <span style="color:${layer.color}">${layer.code} — SAIL-9 Assessment</span>
+        </div>
+        <h2 class="layer-title">${layer.name}</h2>
+        <p class="layer-desc">${layer.desc}</p>
+      </div>
+      ${layer.controls.map(ctrl => buildControlCard(ctrl, layer)).join('')}
+      <div style="margin-top:24px;display:flex;gap:10px">
+        ${layer.id < LAYERS.length-1 ? `<button onclick="showLayer(${layer.id+1})" style="background:${layer.color};color:#fff;font-family:'Syne',sans-serif;font-weight:600;font-size:12px;padding:10px 20px;border-radius:4px;border:none;cursor:pointer">Next: ${LAYERS[layer.id+1].code} →</button>` : `<button onclick="showReport()" style="background:#C49A3C;color:#0B1628;font-family:'Syne',sans-serif;font-weight:600;font-size:12px;padding:10px 20px;border-radius:4px;border:none;cursor:pointer">Generate Report →</button>`}
+      </div>`;
+    main.appendChild(sec);
+  });
+  // Summary section
+  const rep = document.createElement('div');
+  rep.className = 'summary-section';
+  rep.id = 'summary-section';
+  main.appendChild(rep);
+}
+
+function buildControlCard(ctrl, layer){
+  const rid = ctrl.ref.replace('.','_');
+  return `
+  <div class="control-card" id="card-${rid}">
+    <div class="ctrl-head">
+      <div>
+        <div class="ctrl-ref mono">${ctrl.ref}</div>
+        <div class="ctrl-name">${ctrl.name}</div>
+      </div>
+      <div>
+        <div class="ctrl-score-display" id="score-disp-${rid}" style="color:${layer.color}">—</div>
+        <div class="ctrl-score-label">/ 4</div>
+      </div>
+    </div>
+    <div class="ctrl-desc">${ctrl.desc}</div>
+    <div class="ctrl-question">${ctrl.q}</div>
+    <div class="rating-row" id="rating-${rid}">
+      ${RATINGS.map(r=>`<button class="rating-btn" onclick="rate('${ctrl.ref}',${r.val},'${rid}')">${r.label}</button>`).join('')}
+    </div>
+    <div class="recommendation" id="rec-${rid}">
+      <div class="rec-label">Recommendations</div>
+      <div class="rec-text" id="rec-text-${rid}"></div>
+    </div>
+    <div class="ctrl-evidence">
+      <label class="mono">EVIDENCE / NOTES (optional)</label>
+      <textarea placeholder="Document existing controls, evidence references, or context..." onchange="saveNote('${ctrl.ref}',this.value)" id="note-${rid}"></textarea>
+    </div>
+    <div class="ctrl-tags">${ctrl.tags.map(t=>`<span class="ctrl-tag">${t}</span>`).join('')}</div>
+  </div>`;
+}
+
+function buildScorePanel(){
+  const panel = document.getElementById('layer-scores-panel');
+  panel.innerHTML = LAYERS.map(l=>`
+    <div class="ls-row">
+      <div class="ls-badge" style="background:${l.bg};color:${l.color}">${l.code}</div>
+      <div class="ls-name">${l.name}</div>
+      <div class="ls-bar-wrap"><div class="ls-bar" id="lsbar-${l.id}" style="width:0%;background:${l.color}"></div></div>
+      <div class="ls-score" id="lsscore-${l.id}" style="color:${l.color}">—</div>
+    </div>`).join('');
+}
+
+// ── INTERACTIONS ───────────────────────────────────────────────────────────────
+function showLayer(idx){
+  document.querySelectorAll('.layer-section,.summary-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const sec = document.getElementById(`layer-${idx}`);
+  if(sec) sec.classList.add('active');
+  const nav = document.getElementById(`nav-${idx}`);
+  if(nav) nav.classList.add('active');
+  currentLayer = idx;
+  sec && sec.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function showReport(){
+  document.querySelectorAll('.layer-section,.summary-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('summary-section').classList.add('active');
+  document.getElementById('nav-report').classList.add('active');
+  buildReport();
+}
+
+function rate(ref, val, rid){
+  scores[ref] = val;
+  // update button styles
+  const row = document.getElementById(`rating-${rid}`);
+  row.querySelectorAll('.rating-btn').forEach((btn,i)=>{
+    btn.className = 'rating-btn' + (i===val ? ` sel-${val}` : '');
+  });
+  // score display
+  const disp = document.getElementById(`score-disp-${rid}`);
+  if(disp){ disp.textContent = val; disp.style.color = SCORE_COLORS[val]; }
+  // recommendations
+  const layer = LAYERS.find(l=>l.controls.some(c=>c.ref===ref));
+  const ctrl = layer && layer.controls.find(c=>c.ref===ref);
+  if(ctrl && val < 3){
+    const recDiv = document.getElementById(`rec-${rid}`);
+    const recText = document.getElementById(`rec-text-${rid}`);
+    if(recDiv && recText){
+      recText.innerHTML = ctrl.recs.map(r=>`<div style="margin-bottom:4px">→ ${r}</div>`).join('');
+      recDiv.classList.add('show');
+    }
+  } else {
+    const recDiv = document.getElementById(`rec-${rid}`);
+    if(recDiv) recDiv.classList.remove('show');
+  }
+  updateAll();
+}
+
+function saveNote(ref, val){ notes[ref] = val; }
+
+function updateAll(){
+  const overall = calcOverall();
+  // overall score
+  document.getElementById('overall-num').textContent = overall.total;
+  const g = getGrade(overall.total);
+  const gradeEl = document.getElementById('overall-grade');
+  gradeEl.textContent = g.grade;
+  gradeEl.style.background = g.bg;
+  gradeEl.style.color = g.color;
+  // layer scores in panel + nav
+  LAYERS.forEach(l=>{
+    const ls = calcLayerScore(l);
+    const pct = ls.max > 0 ? Math.round((ls.score/ls.max)*100) : 0;
+    document.getElementById(`lsbar-${l.id}`).style.width = pct+'%';
+    document.getElementById(`lsscore-${l.id}`).textContent = ls.answered > 0 ? pct+'%' : '—';
+    document.getElementById(`nscore-${l.id}`).textContent = ls.answered > 0 ? pct+'%' : '—';
+    document.getElementById(`nprog-${l.id}`).style.width = (ls.answered/ls.total*100)+'%';
+  });
+  drawRadar(LAYERS.map(l=>{ const ls=calcLayerScore(l); return ls.max>0?Math.round((ls.score/ls.max)*100):0; }));
+}
+
+function calcLayerScore(layer){
+  const ctls = layer.controls;
+  const answered = ctls.filter(c=>scores[c.ref]!==undefined).length;
+  const score = ctls.reduce((a,c)=>a+(scores[c.ref]||0),0);
+  const max = ctls.length * 4;
+  const total = ctls.length;
+  return {score,max,answered,total,pct: max>0?Math.round((score/max)*100):0};
+}
+
+function calcOverall(){
+  let totalScore=0, totalMax=0, totalAnswered=0;
+  LAYERS.forEach(l=>{
+    const ls = calcLayerScore(l);
+    totalScore += ls.score;
+    totalMax += ls.max;
+    totalAnswered += ls.answered;
+  });
+  return {total: totalMax>0?Math.round((totalScore/totalMax)*100):0, answered:totalAnswered};
+}
+
+function getGrade(score){
+  return GRADE_THRESHOLDS.find(g=>score>=g.min) || GRADE_THRESHOLDS[GRADE_THRESHOLDS.length-1];
+}
+
+// ── RADAR CHART ─────────────────────────────────────────────────────────────────
+function drawRadar(values){
+  const canvas = document.getElementById('radar-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, R = Math.min(cx,cy)-28;
+  const n = values.length;
+  ctx.clearRect(0,0,W,H);
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.1)';
+  const labelColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.45)';
+  // grid circles
+  [0.25,0.5,0.75,1].forEach(r=>{
+    ctx.beginPath();
+    for(let i=0;i<n;i++){
+      const a = (i/n)*Math.PI*2 - Math.PI/2;
+      const x = cx+Math.cos(a)*R*r, y = cy+Math.sin(a)*R*r;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+  // spokes
+  for(let i=0;i<n;i++){
+    const a = (i/n)*Math.PI*2 - Math.PI/2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  // data polygon
+  ctx.beginPath();
+  values.forEach((v,i)=>{
+    const a = (i/n)*Math.PI*2 - Math.PI/2;
+    const r = (v/100)*R;
+    const x = cx+Math.cos(a)*r, y = cy+Math.sin(a)*r;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(196,154,60,0.18)';
+  ctx.fill();
+  ctx.strokeStyle = '#C49A3C';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // dots
+  values.forEach((v,i)=>{
+    const a = (i/n)*Math.PI*2 - Math.PI/2;
+    const r = (v/100)*R;
+    ctx.beginPath();
+    ctx.arc(cx+Math.cos(a)*r, cy+Math.sin(a)*r, 3, 0, Math.PI*2);
+    ctx.fillStyle = '#C49A3C';
+    ctx.fill();
+  });
+  // labels
+  ctx.font = '9px IBM Plex Mono, monospace';
+  ctx.fillStyle = labelColor;
+  ctx.textAlign = 'center';
+  LAYERS.forEach((l,i)=>{
+    const a = (i/n)*Math.PI*2 - Math.PI/2;
+    const lr = R+16;
+    ctx.fillText(l.code, cx+Math.cos(a)*lr, cy+Math.sin(a)*lr+3);
+  });
+}
+
+// ── REPORT ────────────────────────────────────────────────────────────────────
+function buildReport(){
+  const sec = document.getElementById('summary-section');
+  const overall = calcOverall();
+  const g = getGrade(overall.total);
+  const layerData = LAYERS.map(l=>({layer:l, ls:calcLayerScore(l)}));
+  const criticalGaps = [];
+  const improvements = [];
+  LAYERS.forEach(l=>{
+    l.controls.forEach(c=>{
+      const v = scores[c.ref];
+      if(v===undefined||v<=1) criticalGaps.push({layer:l,ctrl:c,score:v===undefined?-1:v});
+      else if(v===2) improvements.push({layer:l,ctrl:c,score:v});
+    });
+  });
+  const priority = criticalGaps.slice(0,8);
+  const compScores = [
+    {std:'ISO 42001',score:calcComplianceScore(['L4.1','L4.2','L5.4','L6.4','L9.4','MA.1']),color:'#C49A3C'},
+    {std:'ISO 27001',score:calcComplianceScore(['L0.1','L0.2','L4.1','L4.3','L4.4','L6.5','L9.3']),color:'#2E6BA8'},
+    {std:'NIST AI RMF',score:calcComplianceScore(['MA.1','L5.4','L7.3','L9.1','L4.2']),color:'#2E8B6A'},
+    {std:'MAESTRO',score:calcComplianceScore(['MA.1','MA.2','MA.3','MA.4','MA.5']),color:'#8B5CF6'},
+    {std:'CII 2026',score:calcComplianceScore(['L0.2','L1.2','L2.4','L7.1','L8.3']),color:'#C94040'},
+  ];
+
+  const ratingIcons = ['🔴','🟠','🟡','🔵','🟢'];
+  const ratingLabels = ['Not implemented','Planned only','Partial','Implemented','Validated'];
+
+  sec.innerHTML = `
+  <div style="padding:32px 36px">
+    <div class="report-header">
+      <div class="report-title">SAIL-9 Assessment Report</div>
+      <div class="report-meta">KB 2026 · Generated ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})} · ${overall.answered} controls assessed of ${LAYERS.reduce((a,l)=>a+l.controls.length,0)} total</div>
+      <div class="grade-display">
+        <div class="grade-item"><div class="grade-num" style="color:${g.color}">${overall.total}</div><div class="grade-label">SCORE /100</div></div>
+        <div class="grade-item"><div class="grade-num" style="color:${g.color}">${g.grade}</div><div class="grade-label">MATURITY</div></div>
+        <div class="grade-item"><div class="grade-num" style="color:#C94040">${criticalGaps.length}</div><div class="grade-label">CRITICAL GAPS</div></div>
+        <div class="grade-item"><div class="grade-num" style="color:#B87020">${improvements.length}</div><div class="grade-label">TO IMPROVE</div></div>
+      </div>
+    </div>
+
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;margin-bottom:12px">Compliance framework alignment</div>
+    <div class="compliance-grid" style="margin-bottom:28px">
+      ${compScores.map(c=>`
+      <div class="compliance-card">
+        <div class="comp-std mono" style="color:${c.color}">${c.std}</div>
+        <div class="comp-score" style="color:${c.color}">${c.score}%</div>
+        <div class="comp-bar"><div class="comp-bar-fill" style="width:${c.score}%;background:${c.color}"></div></div>
+        <div class="comp-note">${getCompNote(c.std, c.score)}</div>
+      </div>`).join('')}
+    </div>
+
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;margin-bottom:12px">Layer-by-layer scores</div>
+    <div class="report-grid" style="margin-bottom:28px">
+      ${layerData.map(({layer:l,ls})=>`
+      <div class="report-card" style="border-top:3px solid ${l.color}">
+        <div class="report-card-title" style="color:${l.color}">${l.code} — ${l.name}
+          <span style="float:right;font-family:'IBM Plex Mono',monospace;font-size:16px">${ls.pct}%</span>
+        </div>
+        ${l.controls.map(c=>{
+          const v = scores[c.ref];
+          const icon = v===undefined ? '⬜' : ratingIcons[v];
+          const label = v===undefined ? 'Not assessed' : ratingLabels[v];
+          const pct = v!==undefined ? ' ('+Math.round((v/4)*100)+'%)' : '';
+          return `<div class="finding">
+            <div class="finding-icon">${icon}</div>
+            <div><div style="font-weight:500;font-size:12px">${c.name}</div>
+            <div style="font-size:11px;color:var(--ink3)">${label}${pct}</div></div>
+          </div>`;
+        }).join('')}
+      </div>`).join('')}
+    </div>
+
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;margin-bottom:12px">Priority recommendations</div>
+    <div class="priority-recs">
+      ${priority.length===0
+        ? '<p style="font-size:13px;color:var(--ink3);padding:12px 0">All assessed controls are at implementation stage or above. Focus on validation testing and Phase 2 controls.</p>'
+        : priority.map((item,i)=>`
+        <div class="priority-rec">
+          <div class="pr-num">${String(i+1).padStart(2,'0')}</div>
+          <div>
+            <div class="pr-title">${item.layer.code} — ${item.ctrl.name}</div>
+            ${item.ctrl.recs.map(r=>`<div class="pr-body">→ ${r}</div>`).join('')}
+          </div>
+          <div class="pr-effort" style="${item.score<0?'background:#fce8e8;color:#8a2020':item.score===0?'background:#fce8e8;color:#8a2020':item.score===1?'background:#fdf0e0;color:#7a4a10':'background:#e0eaf8;color:#1a4a8a'}">${item.score<0?'Not assessed':item.score===0?'Critical':'High'}</div>
+        </div>`).join('')}
+    </div>
+
+    <div style="margin-top:20px;padding:18px 22px;background:var(--navy);border-radius:var(--r-lg);color:rgba(255,255,255,0.6);font-size:13px;line-height:1.7">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Recommended next steps</div>
+      ${getNextSteps(overall.total)}
+    </div>
+
+    <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap">
+      <button onclick="window.print()" style="background:var(--gold);color:var(--navy);font-family:'Syne',sans-serif;font-weight:600;font-size:13px;padding:12px 24px;border-radius:4px;border:none;cursor:pointer">Print / Export PDF</button>
+      <button onclick="showLayer(0)" style="background:transparent;color:var(--ink2);font-family:'Syne',sans-serif;font-size:13px;padding:11px 22px;border-radius:4px;border:1px solid var(--line-light);cursor:pointer">Back to Assessment</button>
+      <a href="index.html" style="background:transparent;color:var(--ink3);font-family:'Syne',sans-serif;font-size:13px;padding:11px 22px;border-radius:4px;border:1px solid var(--line-light);text-decoration:none;display:inline-block">← SAIL-9 Framework</a>
+    </div>
+  </div>`;
+}
+
+function calcComplianceScore(refs){
+  const vals = refs.map(r=>scores[r]!==undefined?scores[r]:null).filter(v=>v!==null);
+  if(vals.length===0) return 0;
+  return Math.round((vals.reduce((a,v)=>a+v,0)/(vals.length*4))*100);
+}
+
+function getCompNote(std, score){
+  const notes = {
+    'ISO 42001': score>=75?'Strong alignment — target certification within 6 months':'Address model cards (L5.4), internal audit (L9.4), and data governance (L4.1) to progress toward certification',
+    'ISO 27001': score>=75?'Good Annex A coverage — compile evidence package':'Prioritise Varonis deployment (L4.1), access rights review (L4.4), and MCP audit logging (L6.5)',
+    'NIST AI RMF': score>=75?'GOVERN/MAP/MEASURE/MANAGE controls established':'Complete MAESTRO threat modelling (MA.1), model card (L5.4), and observability stack (L9.1)',
+    'MAESTRO': score>=75?'Multi-agent threat controls in place':'Run MAESTRO workshop (MA.1), implement A2A security (MA.2), and configure SIEM correlation (MA.4)',
+    'CII 2026': score>=75?'Regulatory posture established for CII obligations':'Address data residency (L2.4), sovereign LLM (L7.1), and DLP residency assessment (L8.3)',
+  };
+  return notes[std] || '';
+}
+
+function getNextSteps(score){
+  if(score>=85) return 'Maturity is optimised. Prepare ISO 42001 and ISO 27001 external certification packages. Schedule external audit. Begin Phase 3 retraining cycle and feedback loop.';
+  if(score>=70) return 'Strong foundation. Complete Phase 2 controls: Nightfall DLP (L8.1), LangSmith tracing (L9.1), SIEM integration (L9.2), and RAG red-team gate (L3.3). ISO 42001 certification readiness in 3 months.';
+  if(score>=55) return 'Core implementation underway. Priority: complete MCP gateway (L6.1) before expanding use cases, run adversarial red-team battery (L7.3), and establish Varonis behavioural baseline (L4.2).';
+  if(score>=40) return 'Foundation in progress. Complete L0 infrastructure baseline and L4 data security before any agent queries production data. Run MAESTRO threat modelling exercise (MA.1) to populate the ISO 42001 risk register.';
+  if(score>=20) return 'Early stage. Start with L0 infrastructure hardening and L1 data source inventory — these are prerequisites for all other layers. Assign executive sponsor and confirm team composition.';
+  return 'Assessment not yet started or very early. Begin with the L0 infrastructure baseline and executive sponsorship confirmation. Consider engaging a SAIL-9 implementation partner for Phase 1 programme setup.';
+}
+
+function resetAll(){
+  if(!confirm('Reset all scores? This cannot be undone.')) return;
+  scores={}; notes={};
+  document.querySelectorAll('.rating-btn').forEach(b=>b.className='rating-btn');
+  document.querySelectorAll('.ctrl-score-display').forEach(d=>{d.textContent='—';d.style.color='';});
+  document.querySelectorAll('.recommendation').forEach(r=>r.classList.remove('show'));
+  document.querySelectorAll('textarea').forEach(t=>{t.value='';});
+  updateAll();
+  showLayer(0);
+}
+
+window.addEventListener('load', init);
+window.addEventListener('resize', ()=>{
+  const v = LAYERS.map(l=>{ const ls=calcLayerScore(l); return ls.max>0?Math.round((ls.score/ls.max)*100):0; });
+  drawRadar(v);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vector vs Vectorless RAG — Enterprise Balance | KB 2026</title>
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://antishbaungally.github.io/SAIL9/rag.html">
+<meta property="og:title" content="Vector vs Vectorless RAG — Finding the Right Balance for Enterprise">
+<meta property="og:description" content="A practitioner's note on combining vector search, structured metadata, and knowledge graphs for audit-defensible enterprise AI retrieval. Mapped to a phased GRC implementation. By Kreetane Baungally — KB 2026, Indian Ocean Region.">
+<meta property="og:site_name" content="KB 2026 — Kreetane Baungally">
+<meta property="og:locale" content="en_GB">
+
+<!-- Twitter / X Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Vector vs Vectorless RAG — Finding the Right Balance for Enterprise">
+<meta name="twitter:description" content="A practitioner's note on combining vector search, structured metadata, and knowledge graphs for audit-defensible enterprise AI retrieval. By Kreetane Baungally — KB 2026.">
+
+<!-- SEO -->
+<meta name="description" content="Vector RAG vs vectorless RAG explained — when to use embedding similarity, lexical/structured retrieval, hybrid fusion, and knowledge graphs. A phased balance for enterprise GRC and sovereign AI stacks. By Kreetane Baungally, KB 2026, Indian Ocean Region.">
+<meta name="author" content="Kreetane Baungally — KB 2026">
+<meta name="keywords" content="vector RAG, vectorless RAG, hybrid search, knowledge graph, GraphRAG, RRF, retrieval augmented generation, enterprise AI, GRC, ISO 42001, sovereign AI, CrewAI, Qdrant, KB 2026">
+<link rel="canonical" href="https://antishbaungally.github.io/SAIL9/rag.html">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0B1628;
+  --navy2:#112240;
+  --navy3:#1a3356;
+  --slate:#4A6480;
+  --slate2:#6B8CAE;
+  --gold:#C49A3C;
+  --gold2:#E8BE6A;
+  --gold-dim:rgba(196,154,60,0.15);
+  --paper:#F2EFE8;
+  --paper2:#E8E4DC;
+  --ink:#0e1a2b;
+  --ink2:#2c3e52;
+  --ink3:#5a7494;
+  --white:#ffffff;
+  --red:#C94040;
+  --red-bg:rgba(201,64,64,0.08);
+  --green:#2E8B6A;
+  --green-bg:rgba(46,139,106,0.1);
+  --blue:#2E6BA8;
+  --blue-bg:rgba(46,107,168,0.1);
+  --amber:#B87020;
+  --amber-bg:rgba(184,112,32,0.1);
+  --line:rgba(255,255,255,0.08);
+  --line-light:rgba(11,22,40,0.1);
+  --r:8px;
+  --r-lg:14px;
+}
+
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--paper);color:var(--ink);overflow-x:hidden;line-height:1.65}
+h1,h2,h3,h4,h5{font-family:'Syne',sans-serif;line-height:1.15}
+code,pre,.mono{font-family:'IBM Plex Mono',monospace}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(11,22,40,0.96);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 48px;height:56px;
+}
+.nav-brand{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--white);letter-spacing:-.01em;text-decoration:none}
+.nav-brand span{color:var(--gold)}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{font-size:12px;color:rgba(255,255,255,0.55);text-decoration:none;letter-spacing:.04em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;transition:color .15s}
+.nav-links a:hover{color:var(--gold)}
+.nav-links a.current{color:var(--gold)}
+.nav-cta{background:var(--gold);color:var(--navy);font-size:12px;font-weight:600;padding:8px 18px;border-radius:4px;text-decoration:none;font-family:'Syne',sans-serif;letter-spacing:.02em;transition:background .15s}
+.nav-cta:hover{background:var(--gold2)}
+
+/* ── ARTICLE HERO ── */
+.ahero{
+  background:var(--navy);
+  padding:140px 80px 80px;
+  position:relative;overflow:hidden;
+}
+.ahero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(196,154,60,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(196,154,60,0.04) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+.ahero-glow{
+  position:absolute;top:-20%;right:-10%;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(196,154,60,0.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.breadcrumb{
+  position:relative;z-index:1;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:rgba(255,255,255,0.4);letter-spacing:.06em;
+  margin-bottom:28px;display:flex;align-items:center;gap:10px;
+}
+.breadcrumb a{color:rgba(255,255,255,0.4);text-decoration:none;transition:color .15s}
+.breadcrumb a:hover{color:var(--gold)}
+.eyebrow{
+  position:relative;z-index:1;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:24px;
+  display:flex;align-items:center;gap:12px;
+}
+.eyebrow::before{content:'';display:block;width:32px;height:1px;background:var(--gold)}
+.ahero-title{
+  position:relative;z-index:1;
+  font-size:clamp(36px,6vw,68px);font-weight:800;
+  color:var(--white);line-height:1.05;letter-spacing:-.03em;
+  max-width:840px;margin-bottom:20px;
+}
+.ahero-title .accent{color:var(--gold)}
+.ahero-sub{
+  position:relative;z-index:1;
+  font-size:17px;font-weight:300;color:rgba(255,255,255,0.55);
+  max-width:620px;margin-bottom:8px;line-height:1.7;
+}
+.ahero-meta{
+  position:relative;z-index:1;
+  display:flex;gap:24px;flex-wrap:wrap;margin-top:32px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:rgba(255,255,255,0.35);letter-spacing:.06em;text-transform:uppercase;
+}
+.ahero-meta span{display:flex;align-items:center;gap:8px}
+.ahero-meta span::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold)}
+
+/* ── ARTICLE LAYOUT ── */
+.article-wrap{
+  max-width:920px;margin:0 auto;padding:72px 32px 96px;
+}
+.article-wrap h2{
+  font-size:clamp(24px,3.4vw,34px);font-weight:700;
+  letter-spacing:-.02em;margin:64px 0 18px;color:var(--navy);
+}
+.article-wrap h2:first-of-type{margin-top:0}
+.article-wrap h3{
+  font-size:18px;font-weight:600;color:var(--navy2);
+  margin:32px 0 12px;letter-spacing:-.01em;
+}
+.article-wrap p{font-size:15.5px;color:var(--ink2);line-height:1.85;margin-bottom:18px;font-weight:300}
+.article-wrap p strong{color:var(--ink);font-weight:600}
+.lede{
+  font-size:18px;color:var(--ink2);line-height:1.85;font-weight:300;
+  border-left:3px solid var(--gold);padding-left:24px;margin-bottom:8px;
+}
+
+/* ── COMPARE TABLE ── */
+.cmp-table{
+  width:100%;border-collapse:collapse;margin:28px 0 8px;
+  border:1px solid var(--line-light);border-radius:var(--r-lg);overflow:hidden;
+  font-size:13.5px;
+}
+.cmp-table th{
+  background:var(--navy);color:var(--white);
+  font-family:'Syne',sans-serif;font-weight:600;font-size:13px;
+  text-align:left;padding:14px 18px;
+}
+.cmp-table td{
+  padding:14px 18px;border-top:1px solid var(--line-light);
+  color:var(--ink2);line-height:1.6;vertical-align:top;
+}
+.cmp-table tr:nth-child(even) td{background:var(--white)}
+.cmp-table tr:nth-child(odd) td{background:var(--paper2)}
+.cmp-table td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
+@media(max-width:700px){
+  .cmp-table{font-size:12px}
+  .cmp-table th,.cmp-table td{padding:10px 12px}
+}
+
+/* ── CARDS / LISTS ── */
+.note-list{list-style:none;margin:20px 0 24px;display:flex;flex-direction:column;gap:10px}
+.note-list li{
+  display:flex;gap:14px;align-items:flex-start;
+  font-size:14.5px;color:var(--ink2);line-height:1.7;font-weight:300;
+}
+.note-list li::before{
+  content:'';flex-shrink:0;margin-top:9px;
+  width:7px;height:7px;border-radius:50%;background:var(--gold);
+}
+
+.pattern-card{
+  background:var(--white);border:1px solid var(--line-light);
+  border-left:3px solid var(--gold);border-radius:var(--r-lg);
+  padding:24px 28px;margin:20px 0;
+}
+.pattern-card .pc-label{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:8px;
+}
+.pattern-card h4{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:var(--ink);margin-bottom:8px}
+.pattern-card p{margin-bottom:0;font-size:14px}
+
+/* ── FLOW STEPS ── */
+.flow{
+  display:flex;flex-direction:column;gap:0;margin:28px 0;
+  border:1px solid var(--line-light);border-radius:var(--r-lg);overflow:hidden;
+}
+.flow-step{
+  display:flex;gap:20px;padding:18px 24px;background:var(--white);
+  border-bottom:1px solid var(--line-light);align-items:flex-start;
+}
+.flow-step:last-child{border-bottom:none}
+.flow-step:nth-child(even){background:var(--paper2)}
+.flow-num{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:18px;
+  color:var(--gold);flex-shrink:0;width:28px;
+}
+.flow-body{font-size:14px;color:var(--ink2);line-height:1.7}
+.flow-body strong{color:var(--ink)}
+
+/* ── PHASE TABLE / TIMELINE ── */
+.phase-grid{display:flex;flex-direction:column;gap:16px;margin:28px 0 8px}
+.phase-card{
+  display:flex;gap:24px;border-radius:var(--r-lg);overflow:hidden;
+  border:1px solid var(--line-light);
+}
+.phase-tag{
+  flex-shrink:0;width:140px;background:var(--navy);color:var(--white);
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  padding:20px 22px;
+}
+.phase-tag .pt-num{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--gold);line-height:1}
+.phase-tag .pt-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-top:6px}
+.phase-body{flex:1;padding:20px 24px;background:var(--white);font-size:14px;color:var(--ink2);line-height:1.75;display:flex;align-items:center}
+@media(max-width:700px){
+  .phase-card{flex-direction:column}
+  .phase-tag{width:auto}
+}
+
+/* ── PRINCIPLE BOX ── */
+.principle{
+  background:var(--navy);color:var(--white);
+  border-radius:var(--r-lg);padding:32px 36px;margin:40px 0 8px;
+  position:relative;overflow:hidden;
+}
+.principle::before{
+  content:'';position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--gold);
+}
+.principle .p-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.principle p{color:rgba(255,255,255,0.75);font-size:15px;margin-bottom:0;line-height:1.8}
+.principle strong{color:var(--white)}
+
+/* ── CTA / FOOTER (shared) ── */
+.cta-section{
+  background:var(--navy);padding:96px 80px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.cta-section::before{
+  content:'KB 2026';
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Syne',sans-serif;font-size:240px;font-weight:800;
+  color:rgba(196,154,60,0.03);pointer-events:none;white-space:nowrap;
+  letter-spacing:-.04em;
+}
+.cta-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:20px;position:relative}
+.cta-title{font-size:clamp(28px,4.5vw,52px);font-weight:800;color:var(--white);letter-spacing:-.02em;margin-bottom:20px;line-height:1.1;position:relative}
+.cta-sub{font-size:16px;color:rgba(255,255,255,0.45);max-width:520px;margin:0 auto 40px;font-weight:300;line-height:1.7;position:relative}
+.btn-primary{
+  background:var(--gold);color:var(--navy);
+  font-family:'Syne',sans-serif;font-weight:600;font-size:14px;
+  padding:14px 28px;border-radius:4px;text-decoration:none;
+  border:none;cursor:pointer;transition:background .15s;display:inline-block;position:relative;
+}
+.btn-primary:hover{background:var(--gold2)}
+.btn-ghost{
+  background:transparent;color:var(--white);
+  font-family:'Syne',sans-serif;font-weight:500;font-size:14px;
+  padding:13px 28px;border-radius:4px;text-decoration:none;
+  border:1px solid rgba(255,255,255,0.2);cursor:pointer;
+  transition:border-color .15s,color .15s;display:inline-block;position:relative;
+}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+
+footer{
+  background:var(--navy2);padding:40px 80px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:16px;border-top:1px solid var(--line);
+}
+.footer-brand{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--white)}
+.footer-brand span{color:var(--gold)}
+.footer-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.3);text-align:right;line-height:1.8}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  nav{padding:0 24px}
+  .nav-links{display:none}
+  .ahero{padding:96px 28px 56px}
+  .article-wrap{padding:48px 20px 64px}
+  .cta-section{padding:64px 28px}
+  footer{padding:28px 24px;flex-direction:column;text-align:center}
+  .footer-meta{text-align:center}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span>SAIL</span>-9</a>
+  <ul class="nav-links">
+    <li><a href="index.html#problem">Problem</a></li>
+    <li><a href="index.html#framework">Framework</a></li>
+    <li><a href="index.html#advantages">Advantages</a></li>
+    <li><a href="index.html#metrics">Metrics</a></li>
+    <li><a href="index.html#roadmap">Roadmap</a></li>
+    <li><a href="rag.html" class="current">RAG Architecture</a></li>
+  </ul>
+  <a class="nav-cta" href="assess.html" style="background:transparent;border:1px solid var(--gold);color:var(--gold);margin-right:8px">Assess Your Project</a>
+  <a class="nav-cta" href="index.html#framework">Explore Framework →</a>
+</nav>
+
+<!-- ARTICLE HERO -->
+<header class="ahero">
+  <div class="ahero-grid"></div>
+  <div class="ahero-glow"></div>
+
+  <div class="breadcrumb">
+    <a href="index.html">SAIL-9</a>
+    <span>/</span>
+    <span style="color:rgba(255,255,255,0.6)">Notes</span>
+    <span>/</span>
+    <span style="color:var(--gold)">RAG Architecture</span>
+  </div>
+
+  <div class="eyebrow">Architecture Note · Retrieval Layer</div>
+  <h1 class="ahero-title">Vector RAG vs. <span class="accent">Vectorless RAG</span><br>— and the right balance for enterprise</h1>
+  <p class="ahero-sub">Embedding similarity and structured retrieval answer different questions over the same data. A defensible enterprise architecture rarely chooses one — it combines both, phased to match the audit and compliance demands of regulated environments.</p>
+
+  <div class="ahero-meta">
+    <span>KB 2026 · Indian Ocean Region</span>
+    <span>Sovereign AI Stack</span>
+    <span>ISO 42001 · NIST AI RMF aligned</span>
+  </div>
+</header>
+
+<!-- ARTICLE BODY -->
+<main class="article-wrap">
+
+  <p class="lede">"Vector RAG" and "vectorless RAG" are often framed as competing approaches, but in practice they answer different questions over the same data. The right enterprise architecture rarely chooses one outright — it combines both, with the balance determined by the type of content and the type of query.</p>
+
+  <h2>1. The core comparison</h2>
+  <p>Before deciding on an architecture, it helps to separate what each approach is actually good at — and where each one quietly breaks down in production.</p>
+
+  <table class="cmp-table">
+    <tr>
+      <th>Dimension</th>
+      <th>Vector RAG</th>
+      <th>Vectorless RAG</th>
+    </tr>
+    <tr>
+      <td>Best at</td>
+      <td>Semantic / fuzzy matching — finding conceptually related content even with different wording</td>
+      <td>Exact, structured, or relational matching — IDs, clause numbers, multi-hop relationships</td>
+    </tr>
+    <tr>
+      <td>Mechanism</td>
+      <td>Embedding similarity search (dense vectors)</td>
+      <td>Lexical search (BM25), metadata filters, SQL, or knowledge-graph traversal</td>
+    </tr>
+    <tr>
+      <td>Auditability</td>
+      <td>Lower — similarity scores are not easily explainable to an auditor</td>
+      <td>Higher — retrieval path is traceable and defensible ("why did you say this?")</td>
+    </tr>
+    <tr>
+      <td>Weak spot</td>
+      <td>Exact-match queries (codes, dates, regulation numbers); chunking and embedding drift</td>
+      <td>Paraphrase / synonym handling; requires upfront structuring effort</td>
+    </tr>
+    <tr>
+      <td>Ideal content</td>
+      <td>Narrative text — policy documents, BIA write-ups, meeting notes</td>
+      <td>Structured records — ISO control mappings, regulation clauses, system inventories</td>
+    </tr>
+  </table>
+
+  <h2>2. Vector RAG</h2>
+  <p>Documents are split into chunks, each chunk is converted into a dense numeric embedding, and queries are matched by similarity in vector space. Tooling is mature — Qdrant, Weaviate, Milvus, Pinecone, and pgvector all support this well.</p>
+
+  <h3>Strengths</h3>
+  <ul class="note-list">
+    <li>Captures meaning, not just words — finds related content even when terminology differs</li>
+    <li>Scales well to large, unstructured corpora</li>
+    <li>Mature, well-supported ecosystem with strong tooling</li>
+  </ul>
+
+  <h3>Weaknesses</h3>
+  <ul class="note-list">
+    <li>Embedding quality is a black box — hard to explain why a result was retrieved</li>
+    <li>Struggles with exact-match queries: IDs, dates, numeric thresholds, clause references</li>
+    <li>Chunking strategy heavily affects retrieval quality</li>
+    <li>Re-embedding required when the underlying model is upgraded</li>
+    <li>"Lost in the middle" effects with large retrieved contexts</li>
+  </ul>
+
+  <h2>3. Vectorless RAG</h2>
+  <p>Retrieval relies on lexical search (BM25), structured metadata filters, SQL-style queries, or knowledge-graph traversal over explicitly modelled entities and relationships — no embeddings involved.</p>
+
+  <h3>Strengths</h3>
+  <ul class="note-list">
+    <li>Precise exact-match and entity-level retrieval — ideal for ISO control IDs, regulatory citations, system names</li>
+    <li>Interpretable and debuggable — retrieval logic can be shown step by step</li>
+    <li>No embedding drift; stable across model upgrades</li>
+    <li>Multi-hop relational reasoning (graph traversal) handles questions a single similarity search cannot</li>
+  </ul>
+
+  <h3>Weaknesses</h3>
+  <ul class="note-list">
+    <li>Weaker on paraphrase and synonym handling</li>
+    <li>Knowledge-graph approaches require upfront modelling and maintenance effort</li>
+    <li>Pure keyword search misses conceptually related but differently worded content</li>
+  </ul>
+
+  <h2>4. A common middle ground: structured JSON inside a vector database</h2>
+  <p>Most modern vector databases — Qdrant, Weaviate — support storing structured JSON as payload/metadata alongside, or instead of, an embedding. This gives rise to two distinct patterns.</p>
+
+  <div class="pattern-card">
+    <div class="pc-label">Pattern 1</div>
+    <h4>Vector DB as a document store only</h4>
+    <p>Structured JSON (control IDs, BIA records, system metadata) is stored as payload, and retrieval happens purely via metadata filters — exact match on control_id, regulation_ref, system_name. No embedding similarity is used. This is effectively vectorless retrieval using a vector database as the storage layer — functionally equivalent to a regular database (Postgres / MongoDB), often simpler to operate if you're already using one for vector workloads.</p>
+  </div>
+
+  <div class="pattern-card">
+    <div class="pc-label">Pattern 2 · Recommended default</div>
+    <h4>Hybrid — embedding + structured payload</h4>
+    <p>Each record gets both a natural-language summary, embedded for semantic discovery (e.g. "ISO 27001 A.5.7 Threat Intelligence — owner: Eddy — status: implemented"), and the full structured JSON as metadata, used by the agent for precise reasoning once the record is retrieved. A single query surfaces relevant records semantically, while the agent receives exact structured data — no separate graph database required for simple, one-hop relationships.</p>
+  </div>
+
+  <h2>5. How hybrid retrieval actually works</h2>
+  <p>"Query both and get the best response" requires a defined fusion strategy — it does not happen automatically.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">01</div>
+      <div class="flow-body">Query received — e.g. <strong>"What's our exposure on the CII compliance deadline for OCS?"</strong></div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">02</div>
+      <div class="flow-body"><strong>Vector path</strong> — embed query, run similarity search, return semantically related narrative chunks</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">03</div>
+      <div class="flow-body"><strong>Structured path</strong> — extract entities/filters (system=OCS, topic=CII, year=2026), run exact metadata match, return precise records</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">04</div>
+      <div class="flow-body"><strong>Fusion</strong> — merge and rerank both result sets</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">05</div>
+      <div class="flow-body">Merged context passed to the LLM for the final answer</div>
+    </div>
+  </div>
+
+  <h3>Fusion strategies</h3>
+  <table class="cmp-table">
+    <tr>
+      <th>Approach</th>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td>Reciprocal Rank Fusion (RRF)</td>
+      <td>Combines rankings from both result lists without requiring comparable scores. Simple and natively supported (Qdrant, Weaviate, OpenSearch).</td>
+    </tr>
+    <tr>
+      <td>Weighted scoring</td>
+      <td>e.g. 0.6 × vector_score + 0.4 × keyword_match_score. Requires tuning per use case.</td>
+    </tr>
+    <tr>
+      <td>LLM-as-reranker</td>
+      <td>Both result sets are passed to the LLM, which judges relevance directly. More expensive, more accurate, fits agentic orchestration.</td>
+    </tr>
+  </table>
+
+  <h2>6. How enterprises are doing this (2025–2026)</h2>
+
+  <h3>Layer 1 — Hybrid search is now the baseline</h3>
+  <p>Pinecone, Weaviate, Qdrant, Elasticsearch/OpenSearch, and Azure AI Search all ship dense + sparse hybrid search with RRF built in. Pure vector-only RAG is rarely used in production enterprise knowledge bases — hybrid is table stakes, not an advanced feature.</p>
+
+  <h3>Layer 2 — Metadata filtering as the de facto access control layer</h3>
+  <p>Most production "RAG" is really filtered hybrid search — retrieval is scoped by tenant, document type, date range, and access permissions (RBAC) before similarity runs at all. In regulated industries, this filtering layer is often the actual compliance control, ensuring the LLM cannot retrieve documents a user is not authorised to see.</p>
+
+  <h3>Layer 3 — Knowledge graphs for compliance and GRC use cases</h3>
+  <p>For audit-defensible, multi-hop reasoning — control → regulation → system → owner — enterprises increasingly layer a graph (e.g. Neo4j) on top of vector search over unstructured policy text. Microsoft's GraphRAG was built specifically because pure vector RAG fails on "global" questions that require reasoning across an entire corpus.</p>
+
+  <h3>Layer 4 — Agentic retrieval (current frontier)</h3>
+  <p>Rather than a fixed pipeline, an orchestrator agent chooses the retrieval strategy per query — SQL, vector, graph, or a combination — and can self-correct if results are thin. LangGraph, CrewAI, and most current agent frameworks recommend this pattern for complex enterprise knowledge tasks, at the cost of higher per-query expense.</p>
+
+  <h2>7. Recommended balance for a GRC / compliance stack</h2>
+  <p>For a compliance-heavy domain — ISO 27001 / 22301 controls, regulatory citations, BIA records, system inventories — the recommended phased approach is:</p>
+
+  <div class="phase-grid">
+    <div class="phase-card">
+      <div class="phase-tag"><div class="pt-num">01</div><div class="pt-label">Phase 1</div></div>
+      <div class="phase-body">Hybrid vector + keyword search in a single vector DB (e.g. Qdrant) with metadata filters for access control. Covers roughly 80% of retrieval needs with minimal complexity.</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-tag"><div class="pt-num">02</div><div class="pt-label">Phase 2</div></div>
+      <div class="phase-body">Add a lightweight knowledge graph specifically for compliance entity relationships — control → framework → system → owner → regulation. Even a few hundred nodes provides multi-hop traceability that vector metadata filters cannot.</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-tag"><div class="pt-num">03</div><div class="pt-label">Phase 3</div></div>
+      <div class="phase-body">Introduce agentic orchestration (e.g. via CrewAI) where an orchestrator agent selects vector search, structured lookup, or graph traversal per query — justified once query variety and corpus size grow beyond what a single hybrid query reliably covers.</div>
+    </div>
+  </div>
+
+  <div class="principle">
+    <div class="p-eyebrow">Key principle</div>
+    <p>Don't build all four layers at once. Hybrid search plus metadata filtering delivers most of the value early. The graph layer is the differentiator specifically where audit-defensible, multi-hop traceability matters — which is precisely where pure vector similarity scores cannot withstand scrutiny.</p>
+  </div>
+
+</main>
+
+<!-- CTA -->
+<section class="cta-section">
+  <p class="cta-eyebrow">KB 2026 · Indian Ocean Region</p>
+  <h2 class="cta-title">Retrieval is a governance<br>decision, not just a tech choice.</h2>
+  <p class="cta-sub">SAIL-9's data and security layers (L1–L3) are where this balance gets implemented. See how the retrieval architecture fits the wider framework.</p>
+  <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+    <a class="btn-primary" href="index.html#framework">Explore SAIL-9 Framework →</a>
+    <a class="btn-ghost" href="assess.html">Assess Your AI Project</a>
+  </div>
+</section>
+
+<footer>
+  <div>
+    <div class="footer-brand"><span>SAIL</span>-9 · Sovereign AI Implementation Layers</div>
+    <div style="margin-top:10px;display:flex;gap:20px;flex-wrap:wrap">
+      <a href="mailto:antishb@hotmail.co.uk" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.45);text-decoration:none;display:flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        antishb@hotmail.co.uk
+      </a>
+      <a href="https://www.linkedin.com/in/kreetane-baungally-386a4017/" target="_blank" rel="noopener" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+        LinkedIn — Kreetane Baungally
+      </a>
+    </div>
+  </div>
+  <div class="footer-meta">
+    KB 2026 · Kreetane Baungally · Indian Ocean Region<br>
+    Architecture note · June 2026 · Part of the SAIL-9 reference library
+  </div>
+</footer>
+
+</body>
+</html>
